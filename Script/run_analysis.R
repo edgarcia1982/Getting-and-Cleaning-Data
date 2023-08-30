@@ -1,6 +1,8 @@
+#### 1. MERGE THE TRAINING AND THE TEST SETS TO CREATE ONE DATA SET. ####
+
 #DEFINIR DIRECTORIO DE TRABAJO
 
-## Define la ruta del directorio que deseas crear
+## Define la ruta del directorio a crear
 nuevoDIR <- "C:/RStudio/Getting-and-Cleaning-Data"
 
 ## Crea las carpetas si no existen
@@ -19,6 +21,7 @@ cat("Directorio de trabajo actual:", getwd(), "\n")
 
 remove(list = ls())
 
+
 #DESCARGO ARCHIVO CON DATOS
 
 ##Creo carpeta donde guardar los archivos.
@@ -32,6 +35,8 @@ if (!file.exists("Data")) {
 ##Descargo y guardo archivo
 urlDATA <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
 download.file(urlDATA, "./Data/HAR_Dataset.zip")
+
+
 
 #DESCOMPRIMO ARCHIVO ZIP
 
@@ -49,56 +54,49 @@ ruta_unzip <- "./Data"
 unzip(ruta_zip, exdir = ruta_unzip)
 remove(list = ls())
 
-#LECTURA DE DATOS
 
-## Lee el archivo de X_train
-X_train <- read.table("./Data/UCI HAR Dataset/train/X_train.txt")
+#ABRO ARCHIVOS Y GENERO MARCOS DE DATOS.
+features <- read.table("./Data/UCI HAR Dataset/features.txt", col.names = c("n","functions"))
+activities <- read.table("./Data/UCI HAR Dataset/activity_labels.txt", col.names = c("code", "activity"))
+subject_test <- read.table("./Data/UCI HAR Dataset/test/subject_test.txt", col.names = "subject")
+x_test <- read.table("./Data/UCI HAR Dataset/test/X_test.txt", col.names = features$functions)
+y_test <- read.table("./Data/UCI HAR Dataset/test/y_test.txt", col.names = "code")
+subject_train <- read.table("./Data/UCI HAR Dataset/train/subject_train.txt", col.names = "subject")
+x_train <- read.table("./Data/UCI HAR Dataset/train/X_train.txt", col.names = features$functions)
+y_train <- read.table("./Data/UCI HAR Dataset/train/y_train.txt", col.names = "code")
 
-## Imprime los primeros registros del archivo para verificar
-head(X_train)
+# 1. Merges the training and the test sets to create one data set.
 
-## Lee el archivo de features
-varNames <- read.table("./Data/UCI HAR Dataset/features.txt")
+X <- rbind(x_train, x_test)
+Y <- rbind(y_train, y_test)
+Subject <- rbind(subject_train, subject_test)
+Merged_Data <- cbind(Subject, Y, X)
 
-## Asignar los nombres de variables al marco de datos X_train
-varNames <- varNames[order(varNames$V1), ]
-colnames(X_train) <- varNames$V2
+# 2. Extracts only the measurements on the mean and standard deviation for each measurement.
+TidyData <- Merged_Data %>% select(subject, code, contains("mean"), contains("std"))
 
-## Lee el archivo de y_train
-y_train <- read.table("./Data/UCI HAR Dataset/train/y_train.txt")
+# 3. Uses descriptive activity names to name the activities in the data set.
+TidyData <- merge(TidyData, activities, by = "code", all = TRUE)
+TidyData <- select(TidyData, !code)
 
-## Imprime los primeros registros del archivo para verificar
-head(y_train)
+# 4. Appropriately labels the data set with descriptive variable names.
+names(TidyData)<-gsub("Acc", "Accelerometer", names(TidyData))
+names(TidyData)<-gsub("Gyro", "Gyroscope", names(TidyData))
+names(TidyData)<-gsub("BodyBody", "Body", names(TidyData))
+names(TidyData)<-gsub("Mag", "Magnitude", names(TidyData))
+names(TidyData)<-gsub("^t", "Time", names(TidyData))
+names(TidyData)<-gsub("^f", "Frequency", names(TidyData))
+names(TidyData)<-gsub("tBody", "TimeBody", names(TidyData))
+names(TidyData)<-gsub("-mean()", "Mean", names(TidyData), ignore.case = TRUE)
+names(TidyData)<-gsub("-std()", "STD", names(TidyData), ignore.case = TRUE)
+names(TidyData)<-gsub("-freq()", "Frequency", names(TidyData), ignore.case = TRUE)
+names(TidyData)<-gsub("angle", "Angle", names(TidyData))
+names(TidyData)<-gsub("gravity", "Gravity", names(TidyData))
 
-## Lee el archivo de activity_labels
-activity_labels <- read.table("./Data/UCI HAR Dataset/activity_labels.txt")
+# 5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+rm(activities, features, Merged_Data, Subject, subject_test, subject_train, X, x_test, x_train, Y, y_test, y_train)
+TidyData <- TidyData %>%
+        group_by(subject, activity) %>%
+        summarise_all(funs(mean))
+write.table(TidyData, "./Data/TidyData.txt", row.name=FALSE)
 
-## Imprime los primeros registros del archivo para verificar
-head(activity_labels)
-
-##Agrega variabe con etiquetas de actividad al archivo y_train
-y_train <- merge(y_train, activity_labels, by.x = "V1", by.y = "V1", all = TRUE)
-
-## Renombro las variables del archivo y_train
-library(dplyr)
-y_train <- rename(y_train, codActivity=V1, labActivity=V2)
-head(y_train)
-
-## Lee el archivo de subject_train
-subject_train <- read.table("./Data/UCI HAR Dataset/train/subject_train.txt")
-
-##Renombro la variable V1 de subject_train.
-subject_train <- rename(subject_train, subject=V1)
-
-## Imprime los primeros registros del archivo para verificar
-head(subject_train)
-table(subject_train)
-
-#Combino los archivos "X_train" e "y_train"
-xy_train <- cbind(X_train, y_train)
-
-#Agrego la variable subjet a xy_train
-xy_train <- cbind(xy_train, subject_train)
-
-## Lee el archivo de total_acc_x_train
-total_acc_x_train <- read.table("./Data/UCI HAR Dataset/train/Inertial Signals/total_acc_x_train.txt")
