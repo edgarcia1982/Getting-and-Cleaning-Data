@@ -1,61 +1,59 @@
-#### 1. MERGE THE TRAINING AND THE TEST SETS TO CREATE ONE DATA SET. ####
+# DEFINE WORKING DIRECTORY
 
-#DEFINIR DIRECTORIO DE TRABAJO
+## Defines the directory path
+newDIR <- "C:/RStudio/Getting-and-Cleaning-Data"
 
-## Define la ruta del directorio a crear
-nuevoDIR <- "C:/RStudio/Getting-and-Cleaning-Data"
-
-## Crea las carpetas si no existen
-if (!file.exists(nuevoDIR)) {
-        dir.create(nuevoDIR, recursive = TRUE)
-        cat("Directorio creado:", nuevoDIR, "\n")
+## Create the folders if they don't exist
+if (!file.exists(newDIR)) {
+        dir.create(newDIR, recursive = TRUE)
+        cat("Directory created:", newDIR, "\n")
 } else {
-        cat("El directorio ya existe:", nuevoDIR, "\n")
+        cat("The directory already exists:", newDIR, "\n")
 }
 
-## Establece el nuevo directorio de trabajo
-setwd(nuevoDIR)
+## Set the new working directory
+setwd(newDIR)
 
-## Imprime la ruta actual del directorio de trabajo
-cat("Directorio de trabajo actual:", getwd(), "\n")
+## Print the current path of the working directory
+cat("Current working directory:", getwd(), "\n")
 
 remove(list = ls())
 
 
-#DESCARGO ARCHIVO CON DATOS
+# DOWNLOAD FILE WITH DATA
 
-##Creo carpeta donde guardar los archivos.
+##I create a folder where to save the files.
 if (!file.exists("Data")) {
         dir.create("Data", recursive = TRUE)
-        cat("Carpeta creada.")
+        cat("Folder created..")
 } else {
-        cat("La carpeta ya existe.")
+        cat("The folder already exists.")
 }
 
-##Descargo y guardo archivo
+##Download and save file
 urlDATA <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
 download.file(urlDATA, "./Data/HAR_Dataset.zip")
 
 
 
-#DESCOMPRIMO ARCHIVO ZIP
+# UNCOMPRESSED ZIP FILE
 
-## Define la ruta al archivo zip
+## Defines the path to the zip file.
 ruta_zip <- "./Data/HAR_Dataset.zip"
 
-## Carga la librería 'zip' para trabajar con archivos zip
+## Load the 'zip' library to work with zip files.
 if (!requireNamespace("zip", quietly = TRUE)) {
         install.packages("zip")
 }
 library(zip)
 
-## Extrae el archivo del zip a la carpeta "Data"
+## Extract the file from the zip to the "Data" folder.
 ruta_unzip <- "./Data"
 unzip(ruta_zip, exdir = ruta_unzip)
 remove(list = ls())
 
 
-#ABRO ARCHIVOS Y GENERO MARCOS DE DATOS.
+#OPEN FILES AND GENERATE DATA FRAMES.
 features <- read.table("./Data/UCI HAR Dataset/features.txt", col.names = c("n","functions"))
 activities <- read.table("./Data/UCI HAR Dataset/activity_labels.txt", col.names = c("code", "activity"))
 subject_test <- read.table("./Data/UCI HAR Dataset/test/subject_test.txt", col.names = "subject")
@@ -99,4 +97,3 @@ TidyData <- TidyData %>%
         group_by(subject, activity) %>%
         summarise_all(funs(mean))
 write.table(TidyData, "./Data/TidyData.txt", row.name=FALSE)
-
